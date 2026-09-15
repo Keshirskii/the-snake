@@ -68,7 +68,7 @@ class GameObject:
 
     def draw(self):
         """Заглушка."""
-        raise NotImplementedError("Метод реализуется в дочернем классе")
+        raise NotImplementedError('Метод реализуется в дочернем классе')
 
     def _draw_cell(self, position):
         """Отрисовка квадрата."""
