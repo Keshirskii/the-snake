@@ -61,12 +61,12 @@ clock = pg.time.Clock()
 class GameObject:
     """Класс с общими атрибутами игровых объектов."""
 
-    def __init__(self, position=None, body_color=None):
+    def __init__(self, body_color=None):
         """Инициализация общих атрибутов игровых объектов."""
-        self.position = [(START_X, START_Y)]
+        self.position = (START_X, START_Y)
         self.body_color = body_color
 
-    def draw(self):
+    def _draw_cell(self):
         """Отрисовка квадрата."""
         rect = pg.Rect(self.position[0], (GRID_SIZE, GRID_SIZE))
         pg.draw.rect(screen, self.body_color, rect)
@@ -74,8 +74,7 @@ class GameObject:
 
     def randomize_position(self, occupied_positions):
         """Получить рандомную позицию для квадрата."""
-        if occupied_positions is None:
-            occupied_positions = set()
+        occupied_positions = occupied_positions or set()
         while True:
             x_axis = randint(0, GRID_WIDTH - 1) * GRID_SIZE
             y_axis = randint(0, GRID_HEIGHT - 1) * GRID_SIZE
@@ -90,7 +89,7 @@ class Apple(GameObject):
 
     def __init__(self, occupied_positions=None):
         """Инициализация яблока."""
-        super().__init__(position=(0, 0), body_color=APPLE_COLOR)
+        super().__init__(body_color=APPLE_COLOR)
         self.randomize_position(occupied_positions)
 
 
@@ -99,7 +98,7 @@ class Poison(GameObject):
 
     def __init__(self, occupied_positions=None):
         """Инициализация ядовитого яблока."""
-        super().__init__(position=[(0, 0)], body_color=POISON_COLOR)
+        super().__init__(body_color=POISON_COLOR)
         self.randomize_position(occupied_positions)
 
 
@@ -108,7 +107,7 @@ class Stone(GameObject):
 
     def __init__(self, occupied_positions=None):
         """Инициализация камня."""
-        super().__init__(position=[(0, 0)], body_color=STONE_COLOR)
+        super().__init__(body_color=STONE_COLOR)
         self.randomize_position(occupied_positions)
 
 
@@ -117,8 +116,7 @@ class Snake(GameObject):
 
     def __init__(self):
         """Инициализация змейки."""
-        super().__init__(position=[(START_X, START_Y)],
-                         body_color=SNAKE_COLOR)
+        super().__init__(body_color=SNAKE_COLOR)
         self.reset()
 
     def get_head_position(self):
@@ -128,17 +126,17 @@ class Snake(GameObject):
     def move(self):
         """Смена координат змейки."""
         head_x_axis, head_y_axis = self.get_head_position()
+        dx, dy = self.direction
         new_head_х_axis = (
-            head_x_axis + self.direction[0] * GRID_SIZE) % SCREEN_WIDTH
+            head_x_axis + dx * GRID_SIZE) % SCREEN_WIDTH
         new_head_y_axis = (
-            head_y_axis + self.direction[1] * GRID_SIZE) % SCREEN_HEIGHT
+            head_y_axis + dy * GRID_SIZE) % SCREEN_HEIGHT
         new_head = (new_head_х_axis, new_head_y_axis)
         self.positions.insert(0, new_head)
 
-        if len(self.positions) > self.length:
-            self.last = self.positions.pop()
-        else:
-            self.last = None
+        self.last = (
+            self.positions.pop()
+            if len(self.positions) > self.length else None)
 
     def update_direction(self):
         """Проверка на разворот в 180."""
@@ -156,13 +154,12 @@ class Snake(GameObject):
 
     def reset(self):
         """Возвращает змейку в начальное состояние."""
-        screen.fill(BOARD_BACKGROUND_COLOR)
-        self.position = [(START_X, START_Y)]
-        self.positions = self.position
+        self.positions = [(START_X, START_Y)]
         self.length = 1
         self.direction = choice([UP, DOWN, LEFT, RIGHT])
         self.next_direction = None
         self.last = None
+        screen.fill(BOARD_BACKGROUND_COLOR)
 
 
 def handle_keys(game_object):
@@ -272,10 +269,10 @@ def main():
             game_reset(snake, apple, poison, stone)
 
         # Отрисовка объектов
-        apple.draw()
-        snake.draw()
-        poison.draw()
-        stone.draw()
+        apple._draw_cell()
+        snake._draw_cell()
+        poison._draw_cell()
+        stone._draw_cell()
 
         pg.display.update()
         clock.tick(SPEED)
