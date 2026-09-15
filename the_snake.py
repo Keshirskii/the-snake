@@ -66,9 +66,13 @@ class GameObject:
         self.position = (START_X, START_Y)
         self.body_color = body_color
 
-    def _draw_cell(self):
+    def draw(self):
+        """Заглушка."""
+        raise NotImplementedError("Метод реализуется в дочернем классе")
+
+    def _draw_cell(self, position):
         """Отрисовка квадрата."""
-        rect = pg.Rect(self.position[0], (GRID_SIZE, GRID_SIZE))
+        rect = pg.Rect(position, (GRID_SIZE, GRID_SIZE))
         pg.draw.rect(screen, self.body_color, rect)
         pg.draw.rect(screen, BORDER_COLOR, rect, 1)
 
@@ -78,9 +82,10 @@ class GameObject:
         while True:
             x_axis = randint(0, GRID_WIDTH - 1) * GRID_SIZE
             y_axis = randint(0, GRID_HEIGHT - 1) * GRID_SIZE
-            self.position = [(x_axis, y_axis)]
+            new_pos = (x_axis, y_axis)  # <-- сразу кортеж
 
-            if self.position[0] not in occupied_positions:
+            if new_pos not in occupied_positions:
+                self.position = new_pos  # <-- сохраняем кортеж
                 break
 
 
@@ -127,11 +132,11 @@ class Snake(GameObject):
         """Смена координат змейки."""
         head_x_axis, head_y_axis = self.get_head_position()
         dx, dy = self.direction
-        new_head_х_axis = (
+        new_head_x_axis = (
             head_x_axis + dx * GRID_SIZE) % SCREEN_WIDTH
         new_head_y_axis = (
             head_y_axis + dy * GRID_SIZE) % SCREEN_HEIGHT
-        new_head = (new_head_х_axis, new_head_y_axis)
+        new_head = (new_head_x_axis, new_head_y_axis)
         self.positions.insert(0, new_head)
 
         self.last = (
@@ -159,7 +164,6 @@ class Snake(GameObject):
         self.direction = choice([UP, DOWN, LEFT, RIGHT])
         self.next_direction = None
         self.last = None
-        screen.fill(BOARD_BACKGROUND_COLOR)
 
 
 def handle_keys(game_object):
@@ -191,11 +195,11 @@ def randomize(snake, apple, poison, stone):
     occupierd_positions = get_occupied_positions(
         snake, apple, poison, stone)
     apple.randomize_position(occupierd_positions)
-    occupierd_positions.add(apple.position[0])
+    occupierd_positions.add(apple.position)
     poison.randomize_position(occupierd_positions)
-    occupierd_positions.add(poison.position[0])
+    occupierd_positions.add(poison.position)
     stone.randomize_position(occupierd_positions)
-    occupierd_positions.add(stone.position[0])
+    occupierd_positions.add(stone.position)
 
 
 def delete_square(position):
@@ -207,6 +211,7 @@ def delete_square(position):
 
 def game_reset(snake, apple, poison, stone):
     """Сброс игры."""
+    screen.fill(BOARD_BACKGROUND_COLOR)
     randomize(snake, apple, poison, stone)
     snake.reset()
 
@@ -225,10 +230,10 @@ def main():
     occupied_positions.update(snake.positions)
 
     apple = Apple(occupied_positions)
-    occupied_positions.add(apple.position[0])
+    occupied_positions.add(apple.position)
 
     poison = Poison(occupied_positions)
-    occupied_positions.add(poison.position[0])
+    occupied_positions.add(poison.position)
 
     stone = Stone(occupied_positions)
 
@@ -247,7 +252,7 @@ def main():
             delete_square(snake.last)
 
         # Проверка столкновения с яблоком
-        if head == apple.position[0]:
+        if head == apple.position:
 
             snake.length += 1
             occupied_positions = get_occupied_positions(snake, apple,
@@ -255,7 +260,7 @@ def main():
             apple.randomize_position(occupied_positions)
 
         # Проверка столкновения с ядом
-        if head == poison.position[0]:
+        if head == poison.position:
             if len(snake.positions) > 1:
                 snake.shrink()
                 occupied_positions = get_occupied_positions(snake, apple,
@@ -265,14 +270,14 @@ def main():
                 game_reset(snake, apple, poison, stone)
 
         # Проверка столкновения с камнем или телом
-        if head == stone.position[0] or head in snake.positions[1:]:
+        if head == stone.position or head in snake.positions[1:]:
             game_reset(snake, apple, poison, stone)
 
         # Отрисовка объектов
-        apple._draw_cell()
-        snake._draw_cell()
-        poison._draw_cell()
-        stone._draw_cell()
+        apple._draw_cell(apple.position)
+        snake._draw_cell(snake.positions[0])
+        poison._draw_cell(poison.position)
+        stone._draw_cell(stone.position)
 
         pg.display.update()
         clock.tick(SPEED)
